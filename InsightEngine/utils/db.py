@@ -7,12 +7,11 @@
 """
 
 from __future__ import annotations
-from urllib.parse import quote_plus
-import asyncio
 import os
 from typing import Any, Dict, Iterable, List, Optional, Union
 
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.engine import URL, make_url
 from sqlalchemy import text
 from InsightEngine.utils.config import settings
 
@@ -28,22 +27,55 @@ _engine: Optional[AsyncEngine] = None
 def _build_database_url() -> str:
     dialect: str = (settings.DB_DIALECT or "mysql").lower()
     host: str = settings.DB_HOST or ""
-    port: str = str(settings.DB_PORT or "")
+    port_int: int = settings.DB_PORT
     user: str = settings.DB_USER or ""
     password: str = settings.DB_PASSWORD or ""
     db_name: str = settings.DB_NAME or ""
 
-    if os.getenv("DATABASE_URL"):
-        return os.getenv("DATABASE_URL")  # 直接使用外部提供的完整URL
+    # 如果外部提供了完整的 DATABASE_URL，优先交给 SQLAlchemy 解析后再渲染。
+    # 这能统一处理密码编码、端口、query 等细节。
+    # 若解析失败，直接抛出清晰异常提示用户对特殊字符做 percent-encode。
+    database_url_env = os.getenv("DATABASE_URL")
+    if database_url_env:
+        try:
+            url_obj = make_url(database_url_env)
+            return url_obj.render_as_string(hide_password=False)
+        except Exception as exc:
+            raise ValueError(
+                "环境变量 DATABASE_URL 不是合法的数据库连接 URL（SQLAlchemy 无法解析）。"
+                "如果用户名或密码包含特殊字符，请对 userinfo 部分进行 percent-encode（例如 '@'→'%40'，':'→'%3A'）。"
+                "或者不要使用 DATABASE_URL，改用 DB_USER/DB_PASSWORD/DB_HOST/DB_PORT/DB_NAME 等分字段配置。"
+            ) from exc
 
-    password = quote_plus(password)
-
+    # 使用 SQLAlchemy 的 URL.create 来安全构建连接 URL，避免手动拼接导致的转义/编码问题
     if dialect in ("postgresql", "postgres"):
         # PostgreSQL 使用 asyncpg 驱动
-        return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{db_name}"
+        url_obj = URL.create(
+            drivername="postgresql+asyncpg",
+            username=user or None,
+            password=password or None,
+            host=host or None,
+            port=port_int,
+            database=db_name or None,
+        )
+        try:
+            return url_obj.render_as_string(hide_password=False)
+        except Exception:
+            return str(url_obj)
 
     # 默认 MySQL 使用 aiomysql 驱动
-    return f"mysql+aiomysql://{user}:{password}@{host}:{port}/{db_name}"
+    url_obj = URL.create(
+        drivername="mysql+aiomysql",
+        username=user or None,
+        password=password or None,
+        host=host or None,
+        port=port_int,
+        database=db_name or None,
+    )
+    try:
+        return url_obj.render_as_string(hide_password=False)
+    except Exception:
+        return str(url_obj)
 
 
 def get_async_engine() -> AsyncEngine:

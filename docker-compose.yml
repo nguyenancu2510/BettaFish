@@ -30,9 +30,11 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-bettafish}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bettafish}
-      POSTGRES_DB: ${POSTGRES_DB:-bettafish}
+      # Postgres 官方镜像只识别 POSTGRES_* 用于初始化；
+      # 而本项目的应用侧读取 DB_*（见 .env）。这里做一次映射，确保两边一致。
+      POSTGRES_USER: ${DB_USER:-bettafish}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-bettafish}
+      POSTGRES_DB: ${DB_NAME:-bettafish}
     ports:
       - "${POSTGRES_PORT:-5444}:5432"
     volumes:
