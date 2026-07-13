@@ -5,9 +5,34 @@
 
 import time
 from functools import wraps
-from typing import Callable, Any
+from typing import Any, Callable, Optional
 import requests
 from loguru import logger
+
+
+RETRYABLE_HTTP_STATUS_CODES = {408, 409, 425, 429}
+
+
+def _get_http_status_code(exc: Exception) -> Optional[int]:
+    """Extract an HTTP status code from requests/OpenAI-style exceptions."""
+    status_code = getattr(exc, "status_code", None)
+    if status_code is None:
+        response = getattr(exc, "response", None)
+        status_code = getattr(response, "status_code", None)
+
+    try:
+        return int(status_code) if status_code is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _should_retry_exception(exc: Exception) -> bool:
+    """Return whether an exception represents a transient failure."""
+    status_code = _get_http_status_code(exc)
+    if status_code is None:
+        return True
+    return status_code in RETRYABLE_HTTP_STATUS_CODES or 500 <= status_code <= 599
+
 
 # 配置日志
 class RetryConfig:
@@ -81,6 +106,13 @@ def with_retry(config: RetryConfig = None):
                     
                 except config.retry_on_exceptions as e:
                     last_exception = e
+
+                    if not _should_retry_exception(e):
+                        status_code = _get_http_status_code(e)
+                        logger.error(
+                            f"函数 {func.__name__} 遇到不可重试的 HTTP {status_code} 错误: {e}"
+                        )
+                        raise
                     
                     if attempt == config.max_retries:
                         # 最后一次尝试也失败了
@@ -167,6 +199,13 @@ def with_graceful_retry(config: RetryConfig = None, default_return=None):
                     
                 except config.retry_on_exceptions as e:
                     last_exception = e
+
+                    if not _should_retry_exception(e):
+                        status_code = _get_http_status_code(e)
+                        logger.warning(
+                            f"非关键API {func.__name__} 遇到不可重试的 HTTP {status_code} 错误: {e}"
+                        )
+                        return default_return
                     
                     if attempt == config.max_retries:
                         # 最后一次尝试也失败了，返回默认值而不抛出异常
