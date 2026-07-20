@@ -753,7 +753,7 @@ class DeepSearchAgent:
 
 ### 获取帮助
 
-常见问题解答：https://github.com/666ghj/BettaFish/issues/185
+常见问题解答：https://github.com/666ghj/BettaFish/issues/700
 
 - **项目主页**：[GitHub仓库](https://github.com/666ghj/BettaFish)
 - **问题反馈**：[Issues页面](https://github.com/666ghj/BettaFish/issues)

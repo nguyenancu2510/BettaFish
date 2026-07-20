@@ -748,7 +748,7 @@ This project is licensed under the [GPL-2.0 License](LICENSE). Please see the LI
 
 ### Get Help
 
-  FAQ: https://github.com/666ghj/BettaFish/issues/185
+  FAQ: https://github.com/666ghj/BettaFish/issues/700
 
 - **Project Homepage**: [GitHub Repository](https://github.com/666ghj/BettaFish)
 - **Issue Reporting**: [Issues Page](https://github.com/666ghj/BettaFish/issues)
