@@ -324,6 +324,13 @@ test_results/
 # Office 文件临时
 ~$*
 
+# 本地 AI 规划产物（不要提交到公开仓库）
+/docs/superpowers/
+/.superpowers/
+
+# 私有 Word 文档
+*.[dD][oO][cC][xX]
+
 # ==== 版本控制 ====
 # Git
 .git/
