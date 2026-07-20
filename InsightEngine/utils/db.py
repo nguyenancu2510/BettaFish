@@ -24,6 +24,26 @@ __all__ = [
 _engine: Optional[AsyncEngine] = None
 
 
+def _parse_database_url(database_url: str) -> URL:
+    """Parse an explicit URL and reject clearly unescaped userinfo separators."""
+    try:
+        scheme_separator = database_url.find("://")
+        if scheme_separator < 0:
+            raise ValueError("missing URL scheme separator")
+
+        authority = database_url[scheme_separator + 3 :].split("/", 1)[0]
+        if authority.count("@") > 1:
+            raise ValueError("userinfo contains an unescaped '@' character")
+
+        return make_url(database_url)
+    except Exception as exc:
+        raise ValueError(
+            "环境变量 DATABASE_URL 不是合法的数据库连接 URL。"
+            "如果用户名或密码包含特殊字符，请对 userinfo 部分进行 percent-encode（例如 '@'→'%40'，':'→'%3A'）。"
+            "或者不要使用 DATABASE_URL，改用 DB_USER/DB_PASSWORD/DB_HOST/DB_PORT/DB_NAME 等分字段配置。"
+        ) from exc
+
+
 def _build_database_url() -> str:
     dialect: str = (settings.DB_DIALECT or "mysql").lower()
     host: str = settings.DB_HOST or ""
@@ -33,19 +53,11 @@ def _build_database_url() -> str:
     db_name: str = settings.DB_NAME or ""
 
     # 如果外部提供了完整的 DATABASE_URL，优先交给 SQLAlchemy 解析后再渲染。
-    # 这能统一处理密码编码、端口、query 等细节。
-    # 若解析失败，直接抛出清晰异常提示用户对特殊字符做 percent-encode。
+    # 明显包含多个未转义 @ 的 userinfo 会被拒绝，避免静默解析为错误主机。
     database_url_env = os.getenv("DATABASE_URL")
     if database_url_env:
-        try:
-            url_obj = make_url(database_url_env)
-            return url_obj.render_as_string(hide_password=False)
-        except Exception as exc:
-            raise ValueError(
-                "环境变量 DATABASE_URL 不是合法的数据库连接 URL（SQLAlchemy 无法解析）。"
-                "如果用户名或密码包含特殊字符，请对 userinfo 部分进行 percent-encode（例如 '@'→'%40'，':'→'%3A'）。"
-                "或者不要使用 DATABASE_URL，改用 DB_USER/DB_PASSWORD/DB_HOST/DB_PORT/DB_NAME 等分字段配置。"
-            ) from exc
+        url_obj = _parse_database_url(database_url_env)
+        return url_obj.render_as_string(hide_password=False)
 
     # 使用 SQLAlchemy 的 URL.create 来安全构建连接 URL，避免手动拼接导致的转义/编码问题
     if dialect in ("postgresql", "postgres"):
@@ -100,5 +112,4 @@ async def fetch_all(query: str, params: Optional[Union[Iterable[Any], Dict[str, 
         rows = result.mappings().all()
         # 将 RowMapping 转换为普通字典
         return [dict(row) for row in rows]
-
 
