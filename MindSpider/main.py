@@ -131,6 +131,10 @@ class MindSpider:
             missing_tables = [t for t in required_tables if t not in existing_tables]
             if missing_tables:
                 logger.error(f"缺少数据库表: {', '.join(missing_tables)}")
+                logger.info(
+                    "提示: 请在 MindSpider 目录运行 'python main.py --init-db'，"
+                    "或在仓库根目录运行 'python MindSpider/main.py --init-db' 初始化数据库表"
+                )
                 return False
             logger.info("数据库表检查通过")
             return True
