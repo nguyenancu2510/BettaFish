@@ -8,8 +8,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# 动态获取项目根目录，避免硬编码绝对路径
+PROJECT_ROOT = Path(__file__).resolve().parent
+
 # 添加项目路径到sys.path
-sys.path.insert(0, '/Users/mayiding/Desktop/GitMy/BettaFish')
+sys.path.insert(0, str(PROJECT_ROOT))
 
 def export_pdf(ir_file_path):
     """导出PDF"""
@@ -32,7 +35,7 @@ def export_pdf(ir_file_path):
 
         # 确定输出文件名
         topic = document_ir.get('metadata', {}).get('topic', 'report')
-        output_dir = Path('/Users/mayiding/Desktop/GitMy/BettaFish/final_reports/pdf')
+        output_dir = PROJECT_ROOT / 'final_reports' / 'pdf'
         output_dir.mkdir(parents=True, exist_ok=True)
 
         pdf_filename = f"report_{topic}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -56,15 +59,20 @@ def export_pdf(ir_file_path):
         return None
 
 if __name__ == "__main__":
-    # 使用最新的报告文件
-    latest_report = "/Users/mayiding/Desktop/GitMy/BettaFish/final_reports/ir/report_ir_人工智能行情发展走势_20251119_235407.json"
+    # 在 final_reports/ir 目录中查找最新的报告文件
+    ir_dir = PROJECT_ROOT / 'final_reports' / 'ir'
 
-    if os.path.exists(latest_report):
-        print("="*50)
-        print("开始导出PDF")
-        print("="*50)
-        result = export_pdf(latest_report)
-        if result:
-            print(f"\n📄 PDF文件已生成: {result}")
+    if ir_dir.exists():
+        ir_files = sorted(ir_dir.glob('*.json'), key=os.path.getmtime, reverse=True)
+        if ir_files:
+            latest_report = str(ir_files[0])
+            print("="*50)
+            print("开始导出PDF")
+            print("="*50)
+            result = export_pdf(latest_report)
+            if result:
+                print(f"\n📄 PDF文件已生成: {result}")
+        else:
+            print(f"❌ 在 {ir_dir} 中未找到报告文件")
     else:
-        print(f"❌ 报告文件不存在: {latest_report}")
+        print(f"❌ 报告目录不存在: {ir_dir}")
