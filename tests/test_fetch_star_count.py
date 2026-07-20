@@ -191,8 +191,14 @@ class FetchStarCountTests(unittest.TestCase):
             encoding="utf-8"
         )
 
+        self.assertIn("cron: '17 3 * * 1'", workflow)
+        self.assertNotIn("cron: '17 3 1,16 * *'", workflow)
+        self.assertNotIn("cron: '17 3 * * *'", workflow)
+        self.assertNotIn("due-check:", workflow)
+        self.assertNotIn("star_history.py due", workflow)
+        self.assertNotIn("inputs.force", workflow)
         self.assertNotIn("persist-credentials: true", workflow)
-        self.assertGreaterEqual(workflow.count("persist-credentials: false"), 2)
+        self.assertEqual(workflow.count("persist-credentials: false"), 1)
         self.assertNotIn("star_history.py sample", workflow)
         self.assertNotIn('os.environ.get("GITHUB_TOKEN"', renderer)
         self.assertNotIn('subparsers.add_parser("sample"', renderer)
@@ -217,11 +223,12 @@ class FetchStarCountTests(unittest.TestCase):
             for section in workflow.split("\n      - name: ")
             if "star_history.py record" in section
         ]
-        self.assertGreaterEqual(len(record_steps), 2)
+        self.assertEqual(len(record_steps), 1)
         for section in record_steps:
             self.assertIn("GITHUB_TOKEN: ''", section)
             self.assertIn("GH_TOKEN: ''", section)
             self.assertNotIn("${{ github.token }}", section)
+            self.assertIn("--force", section)
 
 
 if __name__ == "__main__":

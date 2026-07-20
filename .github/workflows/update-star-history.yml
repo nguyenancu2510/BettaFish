@@ -2,14 +2,8 @@ name: Update Star History
 
 on:
   schedule:
-    - cron: '17 3 * * *'
+    - cron: '17 3 * * 1'
   workflow_dispatch:
-    inputs:
-      force:
-        description: Record a snapshot even when 15 days have not elapsed
-        required: false
-        default: false
-        type: boolean
 permissions:
   contents: read
 
@@ -18,46 +12,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  due-check:
-    if: >-
-      ${{
-        github.repository == '666ghj/BettaFish' &&
-        (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-      }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    outputs:
-      due: ${{ steps.due.outputs.due }}
-    steps:
-      - name: Checkout triggering commit
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 1
-          persist-credentials: false
-
-      - name: Check whether a snapshot is due
-        id: due
-        shell: bash
-        run: |
-          set -euo pipefail
-          value="$(python3 scripts/star_history.py due)"
-          case "$value" in
-            true|false) ;;
-            *)
-              echo "::error::Invalid due result"
-              exit 1
-              ;;
-          esac
-          printf 'due=%s\n' "$value" >> "$GITHUB_OUTPUT"
-
   update-main:
-    needs: due-check
     if: >-
       ${{
-        needs.due-check.result == 'success' &&
         github.repository == '666ghj/BettaFish' &&
         github.ref == 'refs/heads/main' &&
         (
@@ -67,10 +24,6 @@ jobs:
             github.actor_id == '110395318' &&
             github.triggering_actor == '666ghj'
           )
-        ) &&
-        (
-          needs.due-check.outputs.due == 'true' ||
-          (github.event_name == 'workflow_dispatch' && inputs.force == true)
         )
       }}
     runs-on: ubuntu-24.04
@@ -113,21 +66,7 @@ jobs:
           (( ${#lines[@]} == 1 ))
           [[ "${lines[0]}" =~ ^[0-9]+$ ]]
 
-      - name: Record aggregate Star snapshot offline without tokens
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.force != true }}
-        shell: bash
-        env:
-          STAR_COUNT_FILE: ${{ runner.temp }}/bettafish-star-count.txt
-          GITHUB_TOKEN: ''
-          GH_TOKEN: ''
-        run: |
-          set -euo pipefail
-          trap 'rm -f -- "$STAR_COUNT_FILE"' EXIT
-          [[ -z "${GITHUB_TOKEN:-}" && -z "${GH_TOKEN:-}" ]]
-          python3 scripts/star_history.py record --count-file "$STAR_COUNT_FILE"
-
-      - name: Force aggregate Star snapshot offline without tokens
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.force == true }}
+      - name: Record scheduled aggregate Star snapshot offline without tokens
         shell: bash
         env:
           STAR_COUNT_FILE: ${{ runner.temp }}/bettafish-star-count.txt
