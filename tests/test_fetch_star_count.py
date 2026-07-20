@@ -197,8 +197,15 @@ class FetchStarCountTests(unittest.TestCase):
         self.assertNotIn("due-check:", workflow)
         self.assertNotIn("star_history.py due", workflow)
         self.assertNotIn("inputs.force", workflow)
-        self.assertNotIn("persist-credentials: true", workflow)
-        self.assertEqual(workflow.count("persist-credentials: false"), 1)
+        self.assertNotIn("actions/checkout", workflow)
+        self.assertNotIn("uses:", workflow)
+        self.assertIn("Fetch triggering public commit without credentials", workflow)
+        self.assertIn("-c credential.helper=", workflow)
+        self.assertIn("-c http.followRedirects=false", workflow)
+        self.assertIn("-c core.hooksPath=/dev/null", workflow)
+        self.assertIn(
+            '[[ "$(git rev-parse FETCH_HEAD)" == "$GITHUB_SHA" ]]', workflow
+        )
         self.assertNotIn("star_history.py sample", workflow)
         self.assertNotIn('os.environ.get("GITHUB_TOKEN"', renderer)
         self.assertNotIn('subparsers.add_parser("sample"', renderer)
@@ -208,7 +215,7 @@ class FetchStarCountTests(unittest.TestCase):
             for section in workflow.split("\n      - name: ")
             if "GITHUB_TOKEN: ${{ github.token }}" in section
         ]
-        self.assertGreaterEqual(len(token_steps), 2)
+        self.assertEqual(len(token_steps), 2)
         for section in token_steps:
             step_name = section.splitlines()[0]
             self.assertTrue(

@@ -33,12 +33,28 @@ jobs:
     env:
       GIT_TERMINAL_PROMPT: '0'
     steps:
-      - name: Checkout triggering commit
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 1
-          persist-credentials: false
+      - name: Fetch triggering public commit without credentials
+        shell: bash
+        env:
+          GITHUB_TOKEN: ''
+          GH_TOKEN: ''
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REPOSITORY" == '666ghj/BettaFish' ]]
+          [[ "$GITHUB_REF" == 'refs/heads/main' ]]
+          git init .
+          git remote add origin 'https://github.com/666ghj/BettaFish.git'
+          git \
+            -c credential.helper= \
+            -c http.followRedirects=false \
+            fetch \
+            --no-tags \
+            --depth=1 \
+            origin \
+            "$GITHUB_REF"
+          [[ "$(git rev-parse FETCH_HEAD)" == "$GITHUB_SHA" ]]
+          git -c core.hooksPath=/dev/null checkout --detach "$GITHUB_SHA"
+          [[ -z "$(git status --porcelain --untracked-files=all)" ]]
 
       - name: Run Star History tests without tokens
         env:
