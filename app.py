@@ -1171,8 +1171,10 @@ def search():
     # 向运行中的应用发送搜索请求
     results = {}
     api_ports = {'insight': 8501, 'media': 8502, 'query': 8503}
-    
+
     for app_name in running_apps:
+        if app_name not in api_ports:
+            continue
         try:
             api_port = api_ports[app_name]
             # 调用Streamlit应用的API端点
