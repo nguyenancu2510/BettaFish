@@ -785,11 +785,11 @@ class DeepSearchAgent:
 
 ## 📈 项目统计
 
-<a href="https://www.star-history.com/#666ghj/BettaFish&type=date&legend=top-left">
+<a href="https://github.com/666ghj/BettaFish">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=666ghj/BettaFish&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=666ghj/BettaFish&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=666ghj/BettaFish&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="static/image/star-history-dark.svg" />
+   <source media="(prefers-color-scheme: light)" srcset="static/image/star-history-light.svg" />
+   <img alt="BettaFish Star History Chart" src="static/image/star-history-light.svg" />
  </picture>
 </a>
 
