@@ -761,7 +761,7 @@ class DeepSearchAgent:
 
 ### 联系方式
 
-- 📧 **邮箱**：hangjiang@bupt.edu.cn
+- 📧 **邮箱**：baifu.guohj@gmail.com
 
 ### 商务合作
 
