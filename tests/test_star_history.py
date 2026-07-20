@@ -72,7 +72,7 @@ def state_with_snapshots(snapshots=None):
         "schema_version": 1,
         "repository": "666ghj/BettaFish",
         "timezone": "UTC",
-        "ongoing_interval_days": 15,
+        "ongoing_interval_days": 7,
         "reconstruction": {
             "method": "current_stargazers_starred_at",
             "generated_at": "2026-07-01T00:00:00Z",
@@ -256,13 +256,13 @@ class StarHistoryBehaviorTests(unittest.TestCase):
 
             self.assertTrue(state_path.is_symlink())
 
-    def test_due_boundary_is_exactly_fifteen_days(self):
+    def test_due_boundary_is_exactly_seven_days(self):
         baseline = state_with_snapshots(
             [{"at": "2026-07-20T05:00:00Z", "stars": 100}]
         )
         cases = [
-            ("2026-08-04T04:59:59Z", False),
-            ("2026-08-04T05:00:00Z", True),
+            ("2026-07-27T04:59:59Z", False),
+            ("2026-07-27T05:00:00Z", True),
         ]
         for now, expected in cases:
             with self.subTest(now=now), tempfile.TemporaryDirectory() as temporary:
@@ -519,7 +519,7 @@ class StarHistoryBehaviorTests(unittest.TestCase):
             "schema_version": 1,
             "repository": "666ghj/BettaFish",
             "timezone": "UTC",
-            "ongoing_interval_days": 15,
+            "ongoing_interval_days": 7,
             "reconstruction": {
                 "method": "current_stargazers_starred_at",
                 "generated_at": "2026-01-04T00:00:00Z",
@@ -703,7 +703,7 @@ class StarHistoryBehaviorTests(unittest.TestCase):
             "schema_version": 1,
             "repository": "666ghj/BettaFish",
             "timezone": "UTC",
-            "ongoing_interval_days": 15,
+            "ongoing_interval_days": 7,
             "reconstruction": {
                 "method": "current_stargazers_starred_at",
                 "generated_at": "2026-01-02T00:00:00Z",
