@@ -1,11 +1,6 @@
 name: Update Star History
 
 on:
-  # TEMPORARY: delete this push trigger and the feature-smoke job after the
-  # feature/monthly-star-history workflow has passed its one-time smoke run.
-  push:
-    branches:
-      - feature/monthly-star-history
   schedule:
     - cron: '17 3 * * *'
   workflow_dispatch:
@@ -23,79 +18,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  feature-smoke:
-    # TEMPORARY: read-only one-shot validation for feature/monthly-star-history.
-    if: >-
-      ${{
-        github.event_name == 'push' &&
-        github.repository == '666ghj/BettaFish' &&
-        github.ref == 'refs/heads/feature/monthly-star-history' &&
-        github.actor_id == '110395318' &&
-        github.triggering_actor == '666ghj'
-      }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout exact feature commit without persisted credentials
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 1
-          persist-credentials: false
-
-      - name: Run Star History tests without tokens
-        env:
-          GITHUB_TOKEN: ''
-          GH_TOKEN: ''
-        run: >-
-          python3 -m unittest
-          tests.test_star_history
-          tests.test_fetch_star_count
-          -v
-
-      - name: Fetch aggregate Star count only
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          umask 077
-          output="$RUNNER_TEMP/bettafish-star-count.txt"
-          [[ ! -e "$output" && ! -L "$output" ]]
-          python3 scripts/fetch_star_count.py > "$output"
-          [[ -f "$output" && ! -L "$output" ]]
-          (( $(wc -c < "$output") <= 32 ))
-          mapfile -t lines < "$output"
-          (( ${#lines[@]} == 1 ))
-          [[ "${lines[0]}" =~ ^[0-9]+$ ]]
-
-      - name: Force record and render offline without tokens
-        shell: bash
-        env:
-          STAR_COUNT_FILE: ${{ runner.temp }}/bettafish-star-count.txt
-          GITHUB_TOKEN: ''
-          GH_TOKEN: ''
-        run: |
-          set -euo pipefail
-          trap 'rm -f -- "$STAR_COUNT_FILE"' EXIT
-          [[ -z "${GITHUB_TOKEN:-}" && -z "${GH_TOKEN:-}" ]]
-          python3 scripts/star_history.py record \
-            --count-file "$STAR_COUNT_FILE" \
-            --force
-
-      - name: Verify smoke outputs without tokens
-        env:
-          GITHUB_TOKEN: ''
-          GH_TOKEN: ''
-        run: |
-          python3 scripts/star_history.py check
-          python3 -m unittest \
-            tests.test_star_history \
-            tests.test_fetch_star_count \
-            -v
-
   due-check:
     if: >-
       ${{
